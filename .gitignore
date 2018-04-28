@@ -3,3 +3,13 @@ __pycache__
 Logs/*
 .vscode
 
+# simulator cache
+.sim*
+
+# IntelliJ-IDEA specific
+*.iml
+.idea/**
+.idea_modules/
+
+# pytest
+**/.pytest_cache

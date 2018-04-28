@@ -9,12 +9,11 @@ import time
 from enum import Enum
 
 import numpy as np
-
-from udacidrone import Drone
-from unity_drone import UnityDrone
-from controller import NonlinearController
 from udacidrone.connection import MavlinkConnection  # noqa: F401
 from udacidrone.messaging import MsgID
+
+from controller import NonlinearController
+from unity_drone import UnityDrone
 
 
 class States(Enum):

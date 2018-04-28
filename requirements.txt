@@ -1,0 +1,6 @@
+git+https://github.com/udacity/udacidrone.git
+numpy>=1.13
+numpy-quaternion>=2018
+visdom==0.1.7
+matplotlib
+dataclasses>=0.4
