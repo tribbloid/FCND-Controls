@@ -12,7 +12,7 @@ import numpy as np
 from udacidrone.connection import MavlinkConnection  # noqa: F401
 from udacidrone.messaging import MsgID
 
-from controller import NonlinearController
+from controller import ControllerImpl
 from unity_drone import UnityDrone
 
 
@@ -29,7 +29,7 @@ class ControlsFlyer(UnityDrone):
 
     def __init__(self, connection):
         super().__init__(connection)
-        self.controller = NonlinearController()
+        self.controller = ControllerImpl()
         self.target_position = np.array([0.0, 0.0, 0.0])
         self.all_waypoints = []
         self.in_mission = True

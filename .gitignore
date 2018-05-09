@@ -1,6 +1,7 @@
 __pycache__
 *.pyc
-Logs/*
+Logs/**
+TLog.txt/**
 .vscode
 
 # simulator cache
@@ -13,3 +14,4 @@ Logs/*
 
 # pytest
 **/.pytest_cache
+
