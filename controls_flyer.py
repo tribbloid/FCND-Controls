@@ -12,7 +12,7 @@ import numpy as np
 from udacidrone.connection import MavlinkConnection  # noqa: F401
 from udacidrone.messaging import MsgID
 
-from controller import ControllerImpl
+from controllerImpl import ControllerImpl
 from unity_drone import UnityDrone
 
 
@@ -27,9 +27,9 @@ class States(Enum):
 
 class ControlsFlyer(UnityDrone):
 
-    def __init__(self, connection):
+    def __init__(self, connection, controller):
         super().__init__(connection)
-        self.controller = ControllerImpl()
+        self.controller = controller
         self.target_position = np.array([0.0, 0.0, 0.0])
         self.all_waypoints = []
         self.in_mission = True
@@ -205,7 +205,7 @@ class ControlsFlyer(UnityDrone):
 if __name__ == "__main__":
     conn = MavlinkConnection('tcp:127.0.0.1:5760', threaded=False, PX4=False)
     #conn = WebSocketConnection('ws://127.0.0.1:5760')
-    drone = ControlsFlyer(conn)
+    drone = ControlsFlyer(conn, ControllerImpl())
     time.sleep(2)
     drone.start()
     drone.print_mission_score()
