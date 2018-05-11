@@ -19,11 +19,14 @@ MAX_THRUST_A = MAX_THRUST / DRONE_MASS_KG
 MAX_THRUST_A_SQ = MAX_THRUST_A**2
 @dataclass
 class ControllerImpl(NonlinearController):
-    torque: PID = PID(0.1)  # just P
-    atti_xy: PID = PID(2)  # just P
-    atti_z: PID = PID(0.5)  # just P
-    position_xy: PID = PID(0.5, 0, 2)
-    position_z: PID = PID(10, 0.5, 10)
+    position_xy: PID = PID(0.2, 0.0001, 2)
+    position_z: PID = PID(10, 0.5, 15)
+
+    atti_xy: PID = PID(10)  # just P
+    atti_z: PID = PID(5)  # just P
+
+    torque_xy: PID = PID(20)  # just P
+    torque_z: PID = PID(5)  # just P
 
     itrAtti: int = 0
 
@@ -189,7 +192,13 @@ class ControllerImpl(NonlinearController):
 
         Returns: target yawrate in radians/sec
         """
-        d_yaw = (yaw_cmd - yaw) * self.atti_z.P
+        yaw_error = (yaw_cmd - yaw)
+        if yaw_error > np.pi:
+            yaw_error = yaw_error - 2.0 * np.pi
+        elif yaw_error < -np.pi:
+            yaw_error = yaw_error + 2.0 * np.pi
+
+        d_yaw = yaw_error * self.atti_z.P
         return d_yaw
 
     def body_rate_control(self, body_rate_cmd, body_rate):
@@ -201,9 +210,16 @@ class ControllerImpl(NonlinearController):
 
         Returns: 3-element numpy array, desired roll moment, pitch moment, and yaw moment commands in Newtons*meters
         """
-        d_body_rate = (body_rate_cmd - body_rate) * self.torque.P
-        jj = np.diag(MOI)
-        torque = d_body_rate + np.cross(body_rate, np.matmul(jj, body_rate))
+        error_bodyRate = (body_rate_cmd - body_rate)
+        d_bodyRate_xy = error_bodyRate[[0,1]] * self.torque_xy.P
+        d_bdoyRate_z = error_bodyRate[2] * self.torque_z.P
+        d_body_rate = np.array([*d_bodyRate_xy, d_bdoyRate_z])
+
+        # jj = np.diag(MOI)
+        # torque = d_body_rate + np.cross(body_rate, np.matmul(jj, body_rate))
+
+        torque = MOI * d_body_rate
+
         torque_L2 = np.linalg.norm(torque)
 
         if torque_L2 >= MAX_TORQUE:

@@ -12,7 +12,7 @@ import numpy as np
 DRONE_MASS_KG = 0.5
 GRAVITY = -9.81
 MOI = np.array([0.005, 0.005, 0.01])
-MAX_THRUST = 100.0
+MAX_THRUST = 10.0
 MAX_TORQUE = 1.0
 
 
