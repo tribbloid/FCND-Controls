@@ -20,13 +20,13 @@ MAX_THRUST_A_SQ = MAX_THRUST_A**2
 @dataclass
 class ControllerImpl(NonlinearController):
     position_xy: PID = PID(2, 0.001, 4)
-    position_z: PID = PID(10, 0.5, 15)
+    position_z: PID = PID(10, 0.2, 15)
 
-    atti_xy: PID = PID(10)  # just P
-    atti_z: PID = PID(2)  # just P
+    atti_xy: PID = PID(8)  # just P
+    atti_z: PID = PID(1)  # just P
 
     torque_xy: PID = PID(20)  # just P
-    torque_z: PID = PID(5)  # just P
+    torque_z: PID = PID(4)  # just P
 
     itrAtti: int = 0
 
@@ -67,6 +67,9 @@ class ControllerImpl(NonlinearController):
 
         # [?, ?, up_dot_v]T = R [0,0,u1]T, get u1
         R33 = R.c.z
+
+        if R33 <= 0:
+            return MAX_THRUST
 
         # counter-projection
         output = a_up / R33
@@ -122,6 +125,7 @@ class ControllerImpl(NonlinearController):
 
         avoid flipping / downward thrust (this is to avoid gimbal lock, should be fixed later?)
         if max thrust is under powered, attempt to maintain z first
+        TODO: add max banking angle constraint
 
         theoretically should only use a_cmd, other args are just for show
 
