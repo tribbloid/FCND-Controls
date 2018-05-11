@@ -19,11 +19,11 @@ MAX_THRUST_A = MAX_THRUST / DRONE_MASS_KG
 MAX_THRUST_A_SQ = MAX_THRUST_A**2
 @dataclass
 class ControllerImpl(NonlinearController):
-    position_xy: PID = PID(0.2, 0.0001, 2)
+    position_xy: PID = PID(2, 0.001, 4)
     position_z: PID = PID(10, 0.5, 15)
 
     atti_xy: PID = PID(10)  # just P
-    atti_z: PID = PID(5)  # just P
+    atti_z: PID = PID(2)  # just P
 
     torque_xy: PID = PID(20)  # just P
     torque_z: PID = PID(5)  # just P
