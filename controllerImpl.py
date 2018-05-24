@@ -25,8 +25,8 @@ class ControllerImpl(NonlinearController):
     atti_xy: PID = PID(8)  # just P
     atti_z: PID = PID(1)  # just P
 
-    torque_xy: PID = PID(20)  # just P
-    torque_z: PID = PID(4)  # just P
+    torque_xy: PID = PID(15)  # just P
+    torque_z: PID = PID(2)  # just P
 
     itrAtti: int = 0
 
@@ -87,32 +87,33 @@ class ControllerImpl(NonlinearController):
 
         Returns: 2-element numpy array, desired rollrate (p) and pitchrate (q) commands in radians/s
         """
-        try:
-            q_current = Quaternion(list(attitude))
-            R_current = q_current.dcm
-            R33 = R_current.c.z
+        # try:
+        q_current = Quaternion(list(attitude))
+        R_current = q_current.dcm
+        R33 = R_current.c.z
 
-            thrust_a = thrust_cmd / DRONE_MASS_KG
-            thrust_a_z = thrust_a * R33
+        thrust_a = thrust_cmd / DRONE_MASS_KG
+        thrust_a_z = thrust_a * R33
 
-            a_cmd = np.array([*acceleration_cmd, - thrust_a_z])
-            a_cmd_optimized = self.optimize_a_cmd(a_cmd, attitude, thrust_a)
+        a_cmd = np.array([*acceleration_cmd, - thrust_a_z])
+        a_cmd_optimized = self.optimize_a_cmd(a_cmd, attitude, thrust_a)
 
-            q_rect_body = q_current.inversed
-            a_cmd_body = q_rect_body.transform(a_cmd_optimized)
+        q_rect_body = q_current.inversed
+        a_cmd_body = q_rect_body.transform(a_cmd_optimized)#.normalize()
 
-            a_current_body = np.array([0, 0, -thrust_a])
-            d_q = self.getRotationQuaternion(a_current_body, a_cmd_body)
+        a_current_body = np.array([0, 0, -thrust_a])
+        d_q = self.getRotationQuaternion(a_current_body, a_cmd_body)
 
-            d_angle = d_q.euler
+        d_angle = d_q.euler
 
-            # print(
-            #     # str(q_current.euler), "\t==",
-            #     q_target.euler, "\t=>", a_cmd)
-            # a_cmd
+        # print(
+        #     # str(q_current.euler), "\t==",
+        #     q_target.euler, "\t=>", a_cmd)
+        # a_cmd
 
-        except AssertionError as ee:
-            raise ee
+        # except AssertionError as ee:
+        #
+        #     raise ee
 
         d_angle_xy = d_angle[[0, 1]]
         self.itrAtti += 1
@@ -125,15 +126,14 @@ class ControllerImpl(NonlinearController):
 
         avoid flipping / downward thrust (this is to avoid gimbal lock, should be fixed later?)
         if max thrust is under powered, attempt to maintain z first
-        TODO: add max banking angle constraint
 
         theoretically should only use a_cmd, other args are just for show
 
         """
-        info = [
-            "itr_attitude:", self.itrAtti,
-            "\tThrust-a:", thrust_a
-        ]
+        # info = [
+        #     "itr_attitude:", self.itrAtti,
+        #     "\tThrust-a:", thrust_a
+        # ]
 
         result = a_cmd.copy()
         if result[2] >= 0:
@@ -142,10 +142,10 @@ class ControllerImpl(NonlinearController):
         a_cmd_L2Sq = np.dot(result, result)
 
         if a_cmd_L2Sq > MAX_THRUST_A_SQ:
-            info.extend([
-                "\tunderpowered:", MAX_THRUST_A_SQ - a_cmd_L2Sq,
-                "\tunable to achieve such acceleration! slowing down"
-            ])
+            # info.extend([
+            #     "\tunderpowered:", MAX_THRUST_A_SQ - a_cmd_L2Sq,
+            #     "\tunable to achieve such acceleration! slowing down"
+            # ])
             max_xyL2Sq = MAX_THRUST_A_SQ - result[2]**2
             if max_xyL2Sq < 0:
                 result[:] = [0, 0, - MAX_THRUST_A]
@@ -158,7 +158,7 @@ class ControllerImpl(NonlinearController):
                 # assert np.dot(result, result) == MAX_THRUST_A_SQ, str(np.dot(result, result)) + " != " + str(MAX_THRUST_A_SQ)
 
 
-        print(*info)
+        # print(*info)
         return result
 
     @staticmethod
@@ -219,15 +219,18 @@ class ControllerImpl(NonlinearController):
         d_bdoyRate_z = error_bodyRate[2] * self.torque_z.P
         d_body_rate = np.array([*d_bodyRate_xy, d_bdoyRate_z])
 
-        # jj = np.diag(MOI)
-        # torque = d_body_rate + np.cross(body_rate, np.matmul(jj, body_rate))
+        jj = np.diag(MOI)
+        torque_main = np.matmul(jj, d_body_rate)
+        torque_higherorder = np.cross(body_rate, np.matmul(jj, body_rate))
 
-        torque = MOI * d_body_rate
+        print(torque_higherorder)
 
-        torque_L2 = np.linalg.norm(torque)
+        torque = torque_main + torque_higherorder
 
-        if torque_L2 >= MAX_TORQUE:
-            torque =  (MAX_TORQUE / torque_L2) * torque
+        l2 = np.linalg.norm(torque)
+
+        if l2 >= MAX_TORQUE:
+            torque =  (MAX_TORQUE / l2) * torque
             assert(np.linalg.norm(torque) - 1 <= 0.00000001)
 
         return torque
